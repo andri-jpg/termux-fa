@@ -30,7 +30,7 @@ class Chainer:
     def chain(self, user_input):
         template = f"saya bisa menjawab pertanyaan dengan masalah kesehatan.\nHai! Saya adalah chatbot yang akan menjawab pertanyaan seputar kesehatan. Saya adalah chatbot, bukan manusia.\nanda dapat menanyakan saya pertanyaan seputar kesehatan melalui kolom teks dibawah.\nPertanyaan saya : {user_input}.\nJawaban anda :"
         result = self.model.generate(template, generation_config=self.generation_config)
-        return result.text
+        return result.text.strip()
 
 
 origins = ["*"] 

@@ -1,0 +1,4 @@
+llm-rs
+llm-rs[langchain]
+fastapi
+uvicorn

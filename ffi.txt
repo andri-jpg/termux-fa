@@ -1,0 +1,52 @@
+Untuk memanggil fungsi `call` di Dart, Anda dapat menggunakan FFI (Foreign Function Interface). Berikut langkah-langkahnya:
+
+1. Buat Proyek Dart:
+   - Buat proyek Dart, dan pastikan Anda telah mengonfigurasi proyek tersebut dengan benar.
+
+2. Buat File `.so` Rust:
+   - Pastikan Anda telah mengompilasi kode Rust Anda menjadi shared object (`.so`) seperti yang telah dijelaskan sebelumnya.
+
+3. Tambahkan Konfigurasi Dart FFI:
+   - Di dalam proyek Dart Anda, buat file `.dart` yang akan mengimpor dan menggunakan FFI untuk memanggil fungsi Rust.
+   
+   Contoh `rust_ffi.dart`:
+   
+   ```dart
+   import 'dart:ffi'; // Import FFI library
+   import 'dart:io'; // Import IO library
+   
+   // Load shared object (.so) library
+   final DynamicLibrary rustLibrary = Platform.isAndroid
+       ? DynamicLibrary.open('path_to_your_shared_object.so') // Ganti dengan path ke shared object Rust Anda
+       : DynamicLibrary.process();
+   
+   // Deklarasikan fungsi dari Rust
+   typedef CallCFunction = Pointer<Utf8> Function(Pointer<Utf8>);
+
+   // Fungsi untuk memanggil fungsi Rust
+   String callRustFunction(String prompt) {
+     final callC = rustLibrary
+         .lookupFunction<CallCFunction, CallCFunction>('call');
+     final promptPointer = Utf8.toUtf8(prompt); // Konversi string Dart ke Pointer
+     final resultPointer = callC(promptPointer); // Panggil fungsi Rust
+     final result = Utf8.fromUtf8(resultPointer); // Konversi hasil ke string Dart
+     return result;
+   }
+   ```
+
+4. Panggil Fungsi dari Dart:
+   - Selanjutnya, Anda dapat menggunakan fungsi `callRustFunction` untuk memanggil fungsi Rust dari Dart. Ini akan mengambil prompt sebagai input, memanggil fungsi Rust, dan mengembalikan hasilnya.
+
+   Contoh penggunaan di Dart:
+
+   ```dart
+   void main() {
+     final userInput = "Hello, Chatbot!"; // Gantilah dengan input pengguna yang sesuai
+     final result = callRustFunction(userInput);
+     print(result); // Cetak hasil dari Rust
+   }
+   ```
+
+Pastikan untuk menggantikan `'path_to_your_shared_object.so'` dengan path yang sesuai ke shared object Rust Anda.
+
+Dengan langkah-langkah ini, Anda akan dapat memanggil fungsi Rust dari Dart, mengirimkan input pengguna, dan mencetak hasilnya.

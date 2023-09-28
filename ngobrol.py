@@ -34,7 +34,11 @@ class Chainer:
             stop_words=self.stop_words
         )
 
+<<<<<<< HEAD:ngobrol.py
         self.model = Gpt2("ngobrol.bin", session_config=session_config)
+=======
+        self.model = Gpt2("1SdjAt39Mjfi2mklO.bin", session_config=session_config)
+>>>>>>> bd07508c3f58cbde9b786e88e116ed019fc2616e:prompter.py
 
     def chain(self, user_input):
         if self.previous_qa:

@@ -25,7 +25,7 @@ class Chainer:
             stop_words=self.stop_words
         )
 
-        self.model = Gpt2("2midguifSfFt5SbHJsxP.bin", session_config=session_config)
+        self.model = Gpt2("1SdjAt39Mjfi2mklO.bin", session_config=session_config)
 
     def chain(self, user_input):
         template = f"saya bisa menjawab pertanyaan dengan masalah kesehatan.\nHai! Saya adalah chatbot yang akan menjawab pertanyaan seputar kesehatan. Saya adalah chatbot, bukan manusia.\nanda dapat menanyakan saya pertanyaan seputar kesehatan melalui kolom teks dibawah.\nPertanyaan saya : {user_input}.\nJawaban anda :"

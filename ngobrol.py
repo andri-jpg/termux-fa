@@ -25,20 +25,32 @@ class Chainer:
             prefer_mmap=False
         )
 
+        self.memory = ''
+        self.user = 'User'
+        self.ai = 'AI'
+        self.p = 0.88
+        self.k = 8
+        self.t = 0.82
+
         self.generation_config = GenerationConfig(
-            top_p=0.88,
-            top_k=8,
-            temperature=0.82,
+            top_p=self.p,
+            top_k=self.k,
+            temperature=self.t,
             max_new_tokens=600,
             repetition_penalty=1.13,
             stop_words=self.stop_words
         )
 
-<<<<<<< HEAD:ngobrol.py
         self.model = Gpt2("ngobrol.bin", session_config=session_config)
-=======
-        self.model = Gpt2("1SdjAt39Mjfi2mklO.bin", session_config=session_config)
->>>>>>> bd07508c3f58cbde9b786e88e116ed019fc2616e:prompter.py
+
+    def update_config(self, memory, user, ai, p, k, t):
+        self.memory = memory
+        self.user = user
+        self.ai = ai
+        self.p = p
+        self.k = k
+        self.t = t
+
 
     def chain(self, user_input):
         if self.previous_qa:
@@ -46,8 +58,10 @@ class Chainer:
         else:
             previous_question, previous_answer = "", ""
 
-        template = f"User:\n{previous_question}\n\nAI:\n{previous_answer}\n\nUser: {user_input}.\nAI:"
-
+        template = f"{memory}\n{user}:\n{previous_question}\n\n{ai}:\n{previous_answer}\n\n{user}: {user_input}.\n{ai}:"
+        memory = ''
+        user = 'User'
+        ai = 'AI'
         result = self.model.generate(template, generation_config=self.generation_config)
         response = result.text.strip()
 
@@ -84,46 +98,6 @@ def clean_res(result):
         cleaned_result = cleaned_result.replace(word, "")
     return cleaned_result
 
-def detect_risk_content(text):
-    risk_keywords = [
-        "self harm", "bunuh diri", 
-        "menyakiti diri", "kehilangan harapan", 
-        "ingin mati", "merasa putus asa", "<br>", "cara mati"
-    ]
-    for keyword in risk_keywords:
-        if keyword in text.lower():
-            return True
-    return False
-
-def get_random_example_question():
-    example_questions = [
-        "Apa yang dimaksud dengan tekanan darah tinggi?",
-        "Bagaimana cara menjaga pola tidur yang baik?",
-        "Apa saja manfaat olahraga teratur bagi kesehatan?",
-        "Bagaimana cara mengatur diet yang seimbang?",
-        "Apa dampak merokok bagi sistem pernapasan?",
-        "apa itu diabetes?",
-        "Apakah ada makanan yang bisa membantu meningkatkan daya tahan tubuh?",
-    ]
-    return random.choice(example_questions)
-
-risk_warnings = [
-    "Kami sangat peduli dengan keadaan Anda. Kami ingin mengingatkan Anda untuk mencari bantuan profesional segera.",
-    "Ingatlah bahwa Anda tidak sendirian dalam menghadapi masalah ini. Jika Anda merasa berat, jangan ragu untuk mencari dukungan dari teman, keluarga, atau sumber bantuan profesional.",
-    "Jika Anda sedang di situasi sulit, jangan ragu untuk membicarakannya dengan teman, keluarga, atau profesional yang Anda percayai. Ada orang yang peduli dan siap membantu Anda.",
-    "Anda tidak perlu menghadapi hal ini sendirian. Bicaralah dengan seseorang yang Anda percayai atau cari sumber dukungan profesional.",
-]
-
-trigger_keywords = [
-    "obat", "konsultasi", "pengobatan", 
-    "diagnosis", "perawatan", "terapi", "spesialis", "penemu","keluhan","kanker"
-]
-
-def detect_trigger_keywords(text):
-    for keyword in trigger_keywords:
-        if keyword in text.lower():
-            return True
-    return False
 
 def is_weird_response(response):
     words = response.strip().split()
@@ -147,49 +121,44 @@ def is_rep(response):
         return True
     else:
         return False 
+@app.post('/update_config')
+async def update_config_endpoint(request: Request):
+    request_data = await request.json()
+    memory = request_data.get('memory', '')
+    user = request_data.get('user', 'User')
+    ai = request_data.get('ai', 'AI')
+    p = request_data.get('p', 0.88)
+    k = request_data.get('k', 8)
+    t = request_data.get('t', 0.82)
+
+    generator.update_config(memory, user, ai, p, k, t)
+    print(f"Memory: {generator.memory}")
+    print(f"User: {generator.user}")
+    print(f"AI: {generator.ai}")
+    print(f"p: {generator.p}")
+    print(f"k: {generator.k}")
+    print(f"t: {generator.t}")
+
+    return JSONResponse(content={"message": "Konfigurasi berhasil diperbarui"}, status_code=200)
+
 
 @app.post('/handleinput')
 async def handle_input(request: Request):
     global generator
     request_data = await request.json()
     user_input = request_data['input']
+    warning, restart= False, False
+    result = generator.chain(user_input)
+    result_text = clean_res(result)
 
-    if detect_risk_content(user_input):
-        result_text = random.choice(risk_warnings)
-        warning, restart= False, False
+    if is_weird_response(result_text) or is_rep(result_text):
+        restart = True
 
-    else:
-        warning, restart= False, False
-        result = generator.chain(user_input)
-        result_text = clean_res(result)
+    if user_input == 'restart':
+        restart = True
 
-        if not result_text.strip():
-            saran_messages = [
-            "Maaf, pertanyaan Anda terlihat agak rumit bagi saya. Dapatkah Anda mengutarakan dalam kata-kata yang lebih sederhana?",
-            "Sepertinya ada sedikit kebingungan dalam pertanyaan Anda. Bolehkah Anda memberikan penjelasan lebih lanjut?",
-            "Saya merasa kebingungan dengan konteks pertanyaan Anda. Mungkin saya membutuhkan beberapa petunjuk tambahan.",
-            "Pertanyaan Anda mungkin memerlukan sedikit lebih banyak konteks. Bisakah Anda memberikan informasi lebih lanjut?",
-            "Tolong beri saya petunjuk lebih jelas tentang pertanyaan Anda. Saya ingin membantu dengan sebaik-baiknya.",
-            "Saya sedikit bingung dengan pertanyaan Anda. Bisakah Anda mengungkapkan dengan cara yang berbeda?",
-            ]
-
-            result_text = random.choice(saran_messages) + "\n\nJika terus berulang, tolong mulai ulang aplikasi.\nContoh pertanyaan yang disarankan:\n" + get_random_example_question()
-            generator.memory.save_context({"input": user_input}, {"output": result_text})
-        if detect_risk_content(result_text):
-            result_text = "Jawaban disembunyikan karena mengandung konten berisiko."
-            
-        
-        if detect_trigger_keywords(user_input) or detect_trigger_keywords(result_text):
-            warning = True
-
-        if is_weird_response(result_text) or is_rep(result_text):
-            restart = True
-
-        if user_input == 'restart':
-            restart = True
-
-        if restart:
-            generator = Chainer()
+    if restart:
+        generator = Chainer()
 
     return JSONResponse(content={"result": result_text, "warning" : warning, "restart" : restart}, status_code=200)
 

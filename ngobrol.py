@@ -7,15 +7,8 @@ from llm_rs import SessionConfig, GenerationConfig, Gpt2
 
 
 class Chainer:
-    _instance = None
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(Chainer, cls).__new__(cls)
-            cls._instance.init_chainer()
-        return cls._instance
-
-    def init_chainer(self):
+    def __init__(self):
         self.stop_words = ['<EOL>', '<eol>', '<Eol>', 'pertanyaan :', 'Human', 'human', 'Pertanyaan', '\n']
         self.previous_qa = []
 
@@ -58,10 +51,7 @@ class Chainer:
         else:
             previous_question, previous_answer = "", ""
 
-        template = f"{memory}\n{user}:\n{previous_question}\n\n{ai}:\n{previous_answer}\n\n{user}: {user_input}.\n{ai}:"
-        memory = ''
-        user = 'User'
-        ai = 'AI'
+        template = f"{self.memory}\n{self.user}:\n{previous_question}\n\n{self.ai}:\n{previous_answer}\n\n{self.user}: {user_input}.\n{self.ai}:"
         result = self.model.generate(template, generation_config=self.generation_config)
         response = result.text.strip()
 

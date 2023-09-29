@@ -28,16 +28,16 @@ class Chainer:
         self.memory = ''
         self.user = 'User'
         self.ai = 'AI'
-        self.p = 0.88
-        self.k = 8
-        self.t = 0.82
+        self.p = 0.62
+        self.k = 3
+        self.t = 0.88
 
         self.generation_config = GenerationConfig(
             top_p=self.p,
             top_k=self.k,
             temperature=self.t,
             max_new_tokens=600,
-            repetition_penalty=1.13,
+            repetition_penalty=1.1,
             stop_words=self.stop_words
         )
 
@@ -58,16 +58,16 @@ class Chainer:
         else:
             previous_question, previous_answer = "", ""
 
-        template = f"{memory}\n{user}:\n{previous_question}\n\n{ai}:\n{previous_answer}\n\n{user}: {user_input}.\n{ai}:"
-        memory = ''
-        user = 'User'
-        ai = 'AI'
+        template = f"{self.memory}\n{self.user}:\n{previous_question}\n\n{self.ai}:\n{previous_answer}\n\n{self.user}: {user_input}.\n{self.ai}:"
+        #memory = ''
+        #user = 'User'
+        #ai = 'AI'
         result = self.model.generate(template, generation_config=self.generation_config)
         response = result.text.strip()
 
         self.previous_qa.append((user_input, response))
 
-        if len(self.previous_qa) > 4:
+        if len(self.previous_qa) > 3:
             self.previous_qa.pop(0)
 
         return response

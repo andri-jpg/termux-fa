@@ -1,4 +1,3 @@
-import random
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -21,16 +20,16 @@ class Chainer:
         self.memory = ''
         self.user = 'User'
         self.ai = 'AI'
-        self.p = 0.88
-        self.k = 8
-        self.t = 0.82
+        self.p = 0.62
+        self.k = 3
+        self.t = 0.88
 
         self.generation_config = GenerationConfig(
             top_p=self.p,
             top_k=self.k,
             temperature=self.t,
             max_new_tokens=600,
-            repetition_penalty=1.13,
+            repetition_penalty=1.1,
             stop_words=self.stop_words
         )
 
@@ -57,7 +56,7 @@ class Chainer:
 
         self.previous_qa.append((user_input, response))
 
-        if len(self.previous_qa) > 4:
+        if len(self.previous_qa) > 3:
             self.previous_qa.pop(0)
 
         return response

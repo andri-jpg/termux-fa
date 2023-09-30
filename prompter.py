@@ -10,7 +10,7 @@ from llm_rs import SessionConfig, GenerationConfig, Gpt2
 class Chainer:
     def __init__(self):
         self.stop_words = ['<EOL>', '<eol>', '<Eol>', 'pertanyaan :', 'Human', 'human', 'Pertanyaan', '\n']
-        
+        self.previous_qa = []
         session_config = SessionConfig(
             threads=4,
             context_length=1300,
@@ -39,7 +39,7 @@ class Chainer:
 
         self.previous_qa.append((user_input, response))
 
-        if len(self.previous_qa) > 4:
+        if len(self.previous_qa) > 2:
             self.previous_qa.pop(0)
 
         return response
@@ -145,7 +145,7 @@ async def handle_input(request: Request):
     else:
         warning, restart= False, False
         result = generator.chain(user_input)
-        result_text = clean_res(result["response"]).strip()
+        result_text = clean_res(result).strip()
         
 
         if not result_text.strip():
@@ -159,7 +159,6 @@ async def handle_input(request: Request):
             ]
 
             result_text = random.choice(saran_messages) + "\n\nJika terus berulang, tolong mulai ulang aplikasi.\nContoh pertanyaan yang disarankan:\n" + get_random_example_question()
-            generator.memory.save_context({"input": user_input}, {"output": result_text})
         if detect_risk_content(result_text):
             result_text = "Jawaban disembunyikan karena mengandung konten berisiko."
             

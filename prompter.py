@@ -26,7 +26,7 @@ class Chainer:
             stop_words=self.stop_words
         )
 
-        self.model = Gpt2("2midguifSfFt5SbHJsxP.bin", session_config=session_config)
+        self.model = Gpt2("1SdjAt39Mjfi2mklO.bin", session_config=session_config)
 
     def chain(self, user_input):
         if self.previous_qa:

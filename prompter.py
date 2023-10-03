@@ -9,8 +9,8 @@ from llm_rs import SessionConfig, GenerationConfig, Gpt2
 
 class Chainer:
     def __init__(self):
-        self.stop_words = ['<EOL>', '<eol>', '<Eol>', 'pertanyaan :', 'Human', 'human', 'Pertanyaan', '\n']
-        
+        self.stop_words = ['<EOL>', 'pertanyaan :']
+        self.previous_qa = []
         session_config = SessionConfig(
             threads=4,
             context_length=1300,
@@ -18,28 +18,29 @@ class Chainer:
         )
 
         self.generation_config = GenerationConfig(
-            top_p=0.44,
+            top_p=0.48,
             top_k=1,
-            temperature=0.22,
+            temperature=0.32,
             max_new_tokens=120,
             repetition_penalty=1.13,
             stop_words=self.stop_words
         )
 
-        self.model = Gpt2("2midguifSfFt5SbHJsxP.bin", session_config=session_config)
+        self.model = Gpt2("2024.bin", session_config=session_config)
 
     def chain(self, user_input):
         if self.previous_qa:
             previous_question, previous_answer = self.previous_qa[-1]
         else:
             previous_question, previous_answer = "", ""
-        template = f"saya bisa menjawab pertanyaan dengan masalah kesehatan.\nHai! Saya adalah chatbot yang akan menjawab pertanyaan seputar kesehatan. Saya adalah chatbot, bukan manusia.\nanda dapat menanyakan saya pertanyaan seputar kesehatan melalui kolom teks dibawah.\nPertanyaan saya :{previous_question}\nJawaban anda:{previous_answer}\n Pertanyaan saya : {user_input}.\nJawaban anda :"
+        template = f"Hai! Saya adalah chatbot yang akan menjawab pertanyaan seputar kesehatan. Saya adalah chatbot, bukan manusia.\n Pertanyaan saya : {user_input}.\nJawaban anda :"
         result = self.model.generate(template, generation_config=self.generation_config)
         response = result.text.strip()
+        print(self.previous_qa)
 
         self.previous_qa.append((user_input, response))
 
-        if len(self.previous_qa) > 4:
+        if len(self.previous_qa) > 2:
             self.previous_qa.pop(0)
 
         return response
@@ -134,6 +135,7 @@ def is_rep(response):
 @app.post('/handleinput')
 async def handle_input(request: Request):
     global generator
+    global prev_responses
     request_data = await request.json()
     print(request)
     user_input = request_data['input']
@@ -145,8 +147,11 @@ async def handle_input(request: Request):
     else:
         warning, restart= False, False
         result = generator.chain(user_input)
-        result_text = clean_res(result["response"]).strip()
-        
+        if user_input != 'restart' :
+            result_text = clean_res(result).strip()
+        else :
+            result_text = ''
+            prev_responses = []
 
         if not result_text.strip():
             saran_messages = [
@@ -158,8 +163,7 @@ async def handle_input(request: Request):
             "Saya sedikit bingung dengan pertanyaan Anda. Bisakah Anda mengungkapkan dengan cara yang berbeda?",
             ]
 
-            result_text = random.choice(saran_messages) + "\n\nJika terus berulang, tolong mulai ulang aplikasi.\nContoh pertanyaan yang disarankan:\n" + get_random_example_question()
-            generator.memory.save_context({"input": user_input}, {"output": result_text})
+            result_text = random.choice(saran_messages) + "\n\nJika terus berulang, tekan tombol restart di pojok kanan atas.\nContoh pertanyaan yang disarankan:\n" + get_random_example_question()
         if detect_risk_content(result_text):
             result_text = "Jawaban disembunyikan karena mengandung konten berisiko."
             
